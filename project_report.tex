@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Project Workflow and Implementation Report: Modular RAG Chatbot}
+\author{Development Team}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+The objective of this project is to build a Modular Retrieval-Augmented Generation (RAG) Chatbot that serves as an intelligent assistant. The system goes beyond basic Q\&A by incorporating memory, robust document processing capabilities (including Optical Character Recognition (OCR) for scanned PDFs), a vector database for semantic search, and an interactive, real-time frontend. Overall, the project evolved from a monolithic CLI-based script into a production-ready Web API architecture.
+
+\section{Workflow Summary}
+
+The development process consists of the following key phases:
+
+\subsection{Phase 1: Initial Scraper and Data Ingestion}
+\begin{itemize}
+    \item \textbf{Data Collection:} Automated scraping of website links, downloading available PDFs, and capturing relevant pictures/diagrams if required.
+    \item \textbf{Data Preparation:} Parsing basic documents and segmenting them into meaningful chunks based on document structure and text sizes.
+    \item \textbf{Vector Embedding:} Converting text chunks into semantic embeddings and storing them inside a vector database for quick nearby contextual searches.
+\end{itemize}
+
+\subsection{Phase 2: Building the Modular RAG Architecture}
+\begin{itemize}
+    \item \textbf{FastAPI Backend:} Refactored the original legacy script into a robust backend using FastAPI, ensuring scalability and API availability.
+    \item \textbf{ChromaDB Integration:} Configured local persistent vector storage using ChromaDB to facilitate efficient context retrieval.
+    \item \textbf{Session-based Memory:} Integrated a local memory context to keep track of conversations, producing a human-like, multi-turn interaction experience capable of remembering previous user requests.
+    \item \textbf{Frontend UI:} Crafted a premium, responsive Frontend web interface integrating user input with the FastAPI endpoints seamlessly.
+\end{itemize}
+
+\subsection{Phase 3: OCR for Scanned Documents}
+\begin{itemize}
+    \item \textbf{Challenge:} Regular parsers encountered issues when reading image-based (scanned) PDFs as they failed to text directly.
+    \item \textbf{Implementation:} Deployed an OCR Pipeline using a combination of \texttt{PyMuPDF} and \texttt{EasyOCR}. Image extraction and text recognition were utilized to turn previously unreadable scanned documents into searchable text strings.
+    \item \textbf{Integration:} The recognized text is then injected into the existing segmentation and embedding pipeline without breaking the workflow.
+\end{itemize}
+
+\section{System Architecture}
+
+The pipeline operates systematically whenever a user submits a query via the application:
+
+\begin{enumerate}
+    \item \textbf{User Query:} The frontend captures the user's question and any active session details.
+    \item \textbf{Memory Injection:} The chatbot references prior messages in the memory stack to maintain context.
+    \item \textbf{RAG Retrieval:} The user text is vectorized, and semantically similar context is extracted from the document datastore (ChromaDB).
+    \item \textbf{LLM Processing:} The query, memory, and RAG context are combined in a prompt format and submitted to the Large Language Model (LLM).
+    \item \textbf{Output Generation:} The model formulates an answer, attaching sources/links where relevant.
+    \item \textbf{State Update:} The generated context is logged back into the session memory.
+\end{enumerate}
+
+\section{Conclusion}
+The resulting infrastructure handles diverse document types, provides robust search-and-retrieval mechanisms, and delivers responses in an interactive conversational manner via a modular, scalable FastAPI service.
+
+\end{document}

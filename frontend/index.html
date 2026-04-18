@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCET AI Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --chat-bg: #1e212b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --user-msg: #3b82f6;
+            --bot-msg: #2d313f;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Settings */
+        .sidebar {
+            width: 280px;
+            background: var(--chat-bg);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sidebar h2 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        select, button {
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        select:focus { border-color: var(--primary); }
+
+        .btn-action {
+            background: var(--border);
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .btn-action:hover {
+            background: #475569;
+        }
+
+        /* Admin Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background: var(--chat-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 700px; max-width: 90%;
+            height: 500px; max-height: 90%;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: #151821;
+        }
+        
+        .modal-header h2 { font-size: 1.1rem; }
+        
+        .close-btn {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 1.5rem; cursor: pointer;
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: none; border: none; border-bottom: 2px solid transparent;
+            color: var(--text-muted); cursor: pointer; font-weight: 500;
+        }
+        
+        .tab-btn.active {
+            color: var(--primary); border-bottom-color: var(--primary);
+        }
+
+        .modal-body {
+            flex: 1; padding: 20px; overflow-y: auto; display: flex; gap: 20px;
+        }
+        
+        .tab-content { display: none; width: 100%; }
+        .tab-content.active { display: flex; flex-direction: column; gap: 20px; }
+
+        .add-form {
+            background: rgba(255,255,255,0.02);
+            padding: 16px; border-radius: 8px; border: 1px dashed var(--border);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        
+        .form-row { display: flex; gap: 10px; }
+        .form-row > * { flex: 1; }
+        
+        input[type="text"] {
+            background: var(--bg-color); color: var(--text-main);
+            border: 1px solid var(--border); padding: 10px; border-radius: 6px; outline: none;
+        }
+
+        .source-list {
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .source-item {
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .source-info { display: flex; flex-direction: column; gap: 4px; }
+        .source-name { font-weight: 600; font-size: 0.95rem; }
+        .source-meta { font-size: 0.75rem; color: var(--text-muted); }
+        .badge {
+            background: var(--primary); color: white; padding: 2px 6px;
+            border-radius: 4px; font-size: 0.65rem; margin-left: 6px;
+        }
+
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-delete:hover { background: #dc2626; }
+        
+        .perf-card {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            padding: 20px; border-radius: 8px; text-align: center;
+        }
+        .perf-val { font-size: 2rem; font-weight: bold; color: var(--primary); }
+
+        /* Main Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(30, 33, 43, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .chat-window {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-msg);
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: var(--bot-msg);
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 24px;
+            background: var(--bg-color);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            background: var(--chat-bg);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .input-wrapper input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 10px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .input-wrapper button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .input-wrapper button:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Loading Dots */
+        .typing {
+            display: none;
+            align-self: flex-start;
+            background: var(--bot-msg);
+            padding: 14px 18px;
+            border-radius: 12px;
+            border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+        }
+        
+        .dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+            margin: 0 2px;
+        }
+        
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Tcet AI ChatBot</h2>
+        
+        <div class="control-group">
+            <label>Knowledge Source</label>
+            <select id="site">
+                <option value="tcet_main">TCET Main Site</option>
+                <option value="tcet_research">TCET Research</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>AI Model</label>
+            <select id="model">
+                <option value="llama-3.1-8b-instant">Llama 3.1 8B (Fast)</option>
+                <option value="mixtral-8x7b-32768">Mixtral (Smart)</option>
+            </select>
+        </div>
+
+        <div class="control-group" style="margin-top:auto;">
+            <button class="btn-action" onclick="toggleAdminModal(true)" style="background: rgba(59, 130, 246, 0.2); border-color: var(--primary);">⚙️ Admin Panel</button>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <h3>TCET AI Assistant</h3>
+            <div class="status" id="server-status">Connected to Server</div>
+        </div>
+
+        <div class="chat-window" id="chat-window">
+            <div class="message bot">
+                Hello! I am your TCET AI Assistant. I have read the website documentation. How can I help you today?
+            </div>
+            
+            <div class="typing" id="typing-indicator">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="query" placeholder="Ask something about TCET..." autocomplete="off" onkeypress="handleEnter(event)">
+                <button onclick="send()" id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Advanced Admin Control</h2>
+                <button class="close-btn" onclick="toggleAdminModal(false)">&times;</button>
+            </div>
+            <div class="modal-tabs">
+                <button class="tab-btn active" onclick="switchTab('sources')">Knowledge Sources</button>
+                <button class="tab-btn" onclick="switchTab('performance')">Performance</button>
+            </div>
+            <div class="modal-body">
+                <!-- SOURCES TAB -->
+                <div id="tab-sources" class="tab-content active">
+                    <div class="add-form">
+                        <div class="form-row">
+                            <input type="text" id="add-name" placeholder="Friendly Name (e.g. TCET Handbook)">
+                            <select id="add-site">
+                                <option value="tcet_main">Store in TCET Main Memory</option>
+                                <option value="tcet_research">Store in TCET Research Memory</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <input type="text" id="new-url" placeholder="Paste URL here to Scrape...">
+                            <button class="btn-action" style="margin:0;" onclick="addUrl()">Add URL</button>
+                        </div>
+                        <div style="text-align: center; margin: 5px 0;">-- OR --</div>
+                        <div style="position: relative; overflow: hidden; width: 100%;">
+                            <button class="btn-action" style="margin:0; width: 100%;">Upload PDF Document Object</button>
+                            <input type="file" id="pdf-upload" accept=".pdf" onchange="uploadPdf(event)" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
+                        </div>
+                    </div>
+                    
+                    <h3 style="font-size: 0.9rem; margin-top: 10px;">Currently Active Memory Sources</h3>
+                    <div class="source-list" id="source-list">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+                
+                <!-- PERFORMANCE TAB -->
+                <div id="tab-performance" class="tab-content" style="flex-direction: row; flex-wrap: wrap;">
+                    <div class="perf-card" style="flex: 1;">
+                        <div class="perf-val" id="perf-total-chunks">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Total Embedded Chunks</div>
+                    </div>
+                    <div class="perf-card" style="flex: 1;">
+                        <div class="perf-val" id="perf-total-sources">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Total Knowledge Sources</div>
+                    </div>
+                    <div class="perf-card" style="width: 100%;">
+                        <div class="perf-val" style="color: #10b981;">Online</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">ChromaDB Status</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generate and persist Session ID across refreshes to maintain memory
+        if(!sessionStorage.getItem("session_id")) {
+            sessionStorage.setItem("session_id", Math.random().toString(36).substring(7));
+        }
+        const session_id = sessionStorage.getItem("session_id");
+
+        const chatWindow = document.getElementById("chat-window");
+        const typingIndicator = document.getElementById("typing-indicator");
+        const queryInput = document.getElementById("query");
+        const sendBtn = document.getElementById("send-btn");
+        const statusEl = document.getElementById("server-status");
+
+        function handleEnter(e) {
+            if(e.key === 'Enter') send();
+        }
+
+        function appendMessage(text, sender) {
+            const msg = document.createElement("div");
+            msg.className = `message ${sender}`;
+            msg.innerText = text;
+            chatWindow.insertBefore(msg, typingIndicator);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        async function send() {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            // 1. Show user message
+            appendMessage(query, "user");
+            queryInput.value = "";
+            
+            // 2. Show thinking animation & disable button
+            typingIndicator.style.display = "block";
+            scrollToBottom();
+            sendBtn.disabled = true;
+            statusEl.innerText = "Processing...";
+            statusEl.style.color = "orange";
+
+            const site = document.getElementById("site").value;
+            const model = document.getElementById("model").value;
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        query_text: query,
+                        session_id: session_id,
+                        site: site,
+                        model: model
+                    })
+                });
+
+                if(!res.ok) throw new Error("Server disconnected");
+
+                const data = await res.json();
+                
+                // Hide thinking and show answer
+                typingIndicator.style.display = "none";
+                appendMessage(data.answer, "bot");
+                
+                statusEl.innerText = "Connected to Server";
+                statusEl.style.color = "#10b981";
+
+            } catch (err) {
+                typingIndicator.style.display = "none";
+                appendMessage("❌ Error: Could not connect to the Backend API. Is uvicorn running?", "bot");
+                statusEl.innerText = "Offline";
+                statusEl.style.color = "#ef4444";
+            } finally {
+                sendBtn.disabled = false;
+                queryInput.focus();
+            }
+        }
+
+        // Modal Handlers
+        function toggleAdminModal(show) {
+            document.getElementById('admin-modal').style.display = show ? 'flex' : 'none';
+            if (show) fetchSources();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        async function fetchSources() {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/admin/sources");
+                const data = await res.json();
+                const list = document.getElementById("source-list");
+                list.innerHTML = "";
+                
+                let totalChunks = 0;
+                
+                data.sources.forEach(src => {
+                    totalChunks += src.chunks_count || 0;
+                    const el = document.createElement("div");
+                    el.className = "source-item";
+                    let statusColor = src.status === 'completed' ? '#10b981' : (src.status.includes('fail') || src.status.includes('error') ? '#ef4444' : 'orange');
+                    
+                    const name = src.name && src.name !== "Unknown" ? src.name : src.source_path.split('/').pop();
+                    
+                    el.innerHTML = `
+                        <div class="source-info">
+                            <span class="source-name">${src.type === 'pdf' ? '📄' : '🌐'} ${name} <span class="badge" title="Memory Assignment">${src.site}</span></span>
+                            <span class="source-meta">${src.source_path}</span>
+                            <span class="source-status" style="color: ${statusColor}">${src.status} (${src.chunks_count} chunks)</span>
+                        </div>
+                        <button class="btn-delete" onclick="deleteSource('${src.id}')">✕</button>
+                    `;
+                    list.appendChild(el);
+                });
+                
+                // Update performance tab manually
+                document.getElementById('perf-total-chunks').innerText = totalChunks;
+                document.getElementById('perf-total-sources').innerText = data.sources.length;
+
+            } catch(e) {
+                console.warn("Could not fetch sources", e);
+            }
+        }
+
+        async function addUrl() {
+            const urlInput = document.getElementById("new-url");
+            const nameInput = document.getElementById("add-name");
+            const siteInput = document.getElementById("add-site");
+            
+            const url = urlInput.value.trim();
+            const name = nameInput.value.trim() || 'Unknown URL';
+            const site = siteInput.value;
+            
+            if(!url) return alert("Please enter a URL");
+            
+            try {
+                await fetch("http://127.0.0.1:8000/admin/url", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({url: url, name: name, site: site})
+                });
+                urlInput.value = ""; nameInput.value = "";
+                fetchSources();
+            } catch(e) {
+                alert("Failed to add URL");
+            }
+        }
+
+        async function uploadPdf(event) {
+            const file = event.target.files[0];
+            const nameInput = document.getElementById("add-name");
+            const siteInput = document.getElementById("add-site");
+            if(!file) return;
+            
+            const name = nameInput.value.trim() || file.name;
+            const site = siteInput.value;
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("name", name);
+            formData.append("site", site);
+            
+            try {
+                await fetch("http://127.0.0.1:8000/admin/pdf", {
+                    method: "POST",
+                    body: formData
+                });
+                event.target.value = ''; nameInput.value = ""; // reset
+                fetchSources();
+            } catch(e) {
+                alert("Failed to upload PDF");
+            }
+        }
+
+        async function deleteSource(id) {
+            if(!confirm("Are you sure you want to delete this source?")) return;
+            
+            try {
+                await fetch(`http://127.0.0.1:8000/admin/${id}`, {
+                    method: "DELETE"
+                });
+                fetchSources();
+            } catch(e) {
+                alert("Failed to delete source");
+            }
+        }
+
+        // Fetch sources periodically in bg to update status displays
+        fetchSources();
+        setInterval(() => { if (document.getElementById('admin-modal').style.display === 'flex') fetchSources(); }, 3000);
+    </script>
+</body>
+</html>

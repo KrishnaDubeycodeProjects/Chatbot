@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Env
+
+
+# Environment variables
+backend/.env
+
+# Vector DB (Chroma)
+backend/data/chroma_db/
+
+# SQLite DB
+backend/data/*.db
+
+
+# OS files
+.DS_Store
+
+Thumbs.db
+backend/rag/__pycache__

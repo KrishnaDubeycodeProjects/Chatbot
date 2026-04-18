@@ -1,0 +1,54 @@
+# Core
+python-dotenv
+pydantic
+tqdm
+
+# Web Scraping
+requests
+beautifulsoup4
+lxml
+aiohttp
+
+
+requests
+bs4
+# PDF & Document Parsing
+pypdf
+pdfminer.six
+unstructured
+python-docx
+pymupdf
+easyocr
+
+# Image Handling (optional for scraping images)
+Pillow
+
+# Text Processing & Chunking
+nltk
+spacy
+tiktoken
+
+# Embeddings & LLMs
+openai
+sentence-transformers
+easyocr
+
+# Vector Databases
+faiss-cpu
+chromadb
+
+# LangChain (pipeline orchestration)
+langchain
+langchain-community
+
+# Data Handling
+pandas
+numpy
+
+# API (for serving queries)
+fastapi
+python-multipart
+uvicorn
+
+# Logging / Utilities
+loguru
